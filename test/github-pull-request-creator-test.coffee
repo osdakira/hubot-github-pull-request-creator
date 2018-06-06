@@ -1,6 +1,6 @@
 Helper = require('hubot-test-helper')
 chai = require 'chai'
-request = require "superagent"
+http = require 'http'
 expect = chai.expect
 
 helper = new Helper('../src/github-pull-request-creator.coffee')
@@ -60,12 +60,23 @@ describe 'github-pull-request-creator', ->
       expect(options).to.eql { room: "12345" }
       expect(message).to.eql "<@slackId>\nPull Request was created! https://github.com/any_url"
 
-    request
-      .post('http://localhost:8080/hubot/github-pull-request-creator?room=12345')
-      .send(
+    req = http.request
+      host: "localhost"
+      port: 8080
+      path: "/hubot/github-pull-request-creator?room=12345"
+      method: 'POST'
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      (res) ->
+        console.log (res)
+    req.write(
+      JSON.stringify
         title: 'test-123-456'
-        head: 'master',
+        head: 'master'
         base: 'feature/test'
         assignees: ["githubName"]
-      )
-      .end()
+    )
+    req.on 'error', (err) ->
+      throw err unless err.errno == "ECONNRESET"
+    req.end()
